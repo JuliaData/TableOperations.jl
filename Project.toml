@@ -1,0 +1,6 @@
+authors = ["quinnj <quinn.jacobd@gmail.com>"]
+name = "TableOperations"
+uuid = "ab02a1b2-a7df-11e8-156e-fb1833f50b87"
+version = "0.1.0"
+
+[deps]
