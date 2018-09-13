@@ -42,13 +42,14 @@ function Base.iterate(t::Transforms, st=())
 end
 
 # select
-struct Select{T, names}
+struct Select{T, columnaccess, names}
     source::T
 end
 
 function select(x::T, names::Symbol...) where {T}
-    r = Tables.columnaccess(T) ? Tables.columns(x) : Tables.rows(x)
-    return Select{typeof(r), names}(r)
+    columnaccess = Tables.columnaccess(T)
+    r = columnaccess ? Tables.columns(x) : Tables.rows(x)
+    return Select{typeof(r), columnaccess, names}(r)
 end
 
 Tables.istable(::Type{<:Select}) = true
@@ -57,8 +58,8 @@ Base.@pure function typesubset(::Tables.Schema{names, types}, nms) where {names,
     return Tuple{Any[Tables.columntype(names, types, nm) for nm in nms]...}
 end
 
-function Tables.schema(s::Select{T, names}) where {T, names}
-    sch = Tables.schema(s.source)
+function Tables.schema(s::Select{T, columnaccess, names}) where {T, columnaccess, names}
+    sch = Tables.schema(getfield(s, 1))
     sch === nothing && return nothing
     return Tables.Schema(names, typesubset(sch, names))
 end
@@ -66,16 +67,17 @@ end
 # Tables.columns: make Select property-accessible
 Base.getproperty(s::Select, nm::Symbol) = getproperty(getfield(s, 1), nm)
 Base.propertynames(s::Select{T, names}) where {T, names} = names
-Tables.columnaccess(::Type{<:Select}) = true
-Tables.columns(s::Select) = s
+Tables.columnaccess(::Type{Select{T, columnaccess, names}}) where {T, columnaccess, names} = columnaccess
+Tables.columns(s::Select{T, columnaccess, names}) where {T, columnaccess, names} = columnaccess ? s :
+    Tables.buildcolumns(Tables.schema(s), s)
 
 # Tables.rows: implement Iterator interface
-Base.IteratorSize(::Type{Select{T, names}}) where {T, names} = Base.IteratorSize(T)
-Base.length(s::Select) = length(s.source)
-Base.IteratorEltype(::Type{Select{T, names}}) where {T, names} = Base.IteratorEltype(T)
-Base.eltype(s::Select{T, names}) where {T, names} = SelectRow{eltype(s.source), names}
-Tables.rowaccess(::Type{<:Select}) = true
-Tables.rows(s::Select) = s
+Base.IteratorSize(::Type{Select{T, columnaccess, names}}) where {T, columnaccess, names} = Base.IteratorSize(T)
+Base.length(s::Select) = length(getfield(s, 1))
+Base.IteratorEltype(::Type{Select{T, columnaccess, names}}) where {T, columnaccess, names} = Base.IteratorEltype(T)
+Base.eltype(s::Select{T, columnaccess, names}) where {T, columnaccess, names} = SelectRow{eltype(getfield(s, 1)), names}
+Tables.rowaccess(::Type{Select{T, columnaccess, names}}) where {T, columnaccess, names} = !columnaccess
+Tables.rows(s::Select{T, columnaccess, names}) where {T, columnaccess, names} = columnaccess ? Tables.RowIterator(s, Tables.rowcount(getfield(s, 1))) : s
 
 # we need to iterate a "row view" in case the underlying source has unknown schema
 # to ensure each iterated row only has `names` propertynames
@@ -88,7 +90,7 @@ Base.getproperty(row::SelectRow, nm::Symbol) = getproperty(getfield(row, 1), nm)
 Base.propertynames(row::SelectRow{T, names}) where {T, names} = names
 
 function Base.iterate(s::Select{T, names}, st=()) where {T, names}
-    state = iterate(s.source, st...)
+    state = iterate(getfield(s, 1), st...)
     state === nothing && return nothing
     row, st = state
     return SelectRow{typeof(row), names}(row), (st,)
