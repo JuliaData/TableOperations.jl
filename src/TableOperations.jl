@@ -105,11 +105,7 @@ end
 Tables.istable(::Type{<:Map}) = true
 Tables.rowaccess(::Type{<:Map}) = true
 Tables.rows(m::Map) = m
-function Tables.schema(m::Map)
-    sch = Table.schema(m.source)
-    sch === nothing && return nothing
-
-end
+Tables.schema(m::Map) = nothing
 
 Base.IteratorSize(::Type{Map{T, F}}) where {T, F} = Base.IteratorSize(T)
 Base.length(m::Map) = length(m.source)
