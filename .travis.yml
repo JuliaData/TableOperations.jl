@@ -1,0 +1,22 @@
+language: julia
+
+sudo: false
+
+os:
+  - linux
+  - osx
+
+julia:
+  - 0.7
+  - 1.0
+  - nightly
+
+matrix:
+  allow_failures:
+  - julia: nightly
+
+notifications:
+  email: false
+
+after_success:
+  - julia -e 'using Pkg; cd(Pkg.dir("TableOperations")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
