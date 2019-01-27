@@ -1,6 +1,7 @@
-authors = ["quinnj <quinn.jacobd@gmail.com>"]
+authors = ["Jacob Quinn <quinn.jacobd@gmail.com>"]
 name = "TableOperations"
 uuid = "ab02a1b2-a7df-11e8-156e-fb1833f50b87"
 version = "0.1.0"
 
 [deps]
+Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
