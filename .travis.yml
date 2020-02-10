@@ -1,17 +1,29 @@
+# Documentation: http://docs.travis-ci.com/user/languages/julia/
 language: julia
-
-sudo: false
 
 os:
   - linux
   - osx
+  - windows
+
+arch:
+  - x64
+  - x86
 
 julia:
-  - 0.7
   - 1.0
+  - 1.3
   - nightly
 
+env:
+  - JULIA_PROJECT="@."
+
 matrix:
+  exclude:
+    - os: osx
+      arch: x86
+    - os: linux
+      arch: x86
   allow_failures:
   - julia: nightly
 
@@ -19,4 +31,4 @@ notifications:
   email: false
 
 after_success:
-  - julia -e 'using Pkg; cd(Pkg.dir("TableOperations")); Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+   - julia -e 'ENV["TRAVIS_JULIA_VERSION"] == "1.3" && ENV["TRAVIS_OS_NAME"] != "linux" && exit(); using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(Codecov.process_folder())'
