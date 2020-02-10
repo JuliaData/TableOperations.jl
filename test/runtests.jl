@@ -1,8 +1,36 @@
-using TableOperations, Test
+using TableOperations, Tables, Test
 
 ctable = (A=[1, missing, 3], B=[1.0, 2.0, 3.0], C=["hey", "there", "sailor"])
+rtable = Tables.rowtable(ctable)
 
-## TableOperations.transform
+@testset "TableOperations.transform" begin
+
+tran = ctable |> TableOperations.transform(C=Symbol)
+@test Tables.istable(typeof(tran))
+@test !Tables.rowaccess(typeof(tran))
+@test Tables.columnaccess(typeof(tran))
+@test Tables.columns(tran) === tran
+@test isequal(Tables.getcolumn(tran, :A), [1,missing,3])
+@test isequal(Tables.getcolumn(tran, 1), [1,missing,3])
+
+tran2 = rtable |> TableOperations.transform(C=Symbol)
+@test Tables.istable(typeof(tran2))
+@test Tables.rowaccess(typeof(tran2))
+@test !Tables.columnaccess(typeof(tran2))
+@test Tables.rows(tran2) === tran2
+@test Base.IteratorSize(typeof(tran2)) == Base.HasShape{1}()
+@test length(tran2) == 3
+@test eltype(tran2) == TableOperations.TransformsRow{NamedTuple{(:A, :B, :C),Tuple{Union{Missing, Int},Float64,String}},NamedTuple{(:C,),Tuple{DataType}}}
+trow = first(tran2)
+@test trow.A === 1
+@test trow.B === 1.0
+@test trow.C == :hey
+@test Tables.getcolumn(trow, 1) == 1
+@test Tables.getcolumn(trow, :A) == 1
+ctable2 = Tables.columntable(tran2)
+@test isequal(ctable2.A, ctable.A)
+@test ctable2.C == map(Symbol, ctable.C)
+
 # test various ways of inputting TableOperations.transform functions
 table = TableOperations.transform(ctable, Dict{String, Base.Callable}("C" => Symbol)) |> Tables.columntable
 @test table.C == [:hey, :there, :sailor]
@@ -60,8 +88,82 @@ table = ctable |> TableOperations.transform(Dict(2=>x->x==2.0 ? missing : x)) |>
 @test isequal(map(x->x.B, table), [1.0, missing, 3.0])
 @test typeof(map(x->x.B, table)) == Vector{Union{Float64, Missing}}
 
-## TableOperations.select
+end
+
+@testset "TableOperations.select" begin
+
+# 117
+sel = TableOperations.select(ctable)
+@test Tables.istable(typeof(sel))
+@test Tables.schema(sel) == Tables.Schema((), ())
+@test Tables.columnaccess(typeof(sel))
+@test Tables.columns(sel) === sel
+@test propertynames(sel) == ()
+@test isequal(Tables.getcolumn(sel, 1), [1, missing, 3])
+@test isequal(Tables.getcolumn(sel, :A), [1, missing, 3])
+@test Tables.columntable(sel) == NamedTuple()
+@test Tables.rowtable(sel) == NamedTuple{(), Tuple{}}[]
+
+sel = ctable |> TableOperations.select(:A)
+@test Tables.istable(typeof(sel))
+@test Tables.schema(sel) == Tables.Schema((:A,), (Union{Int, Missing},))
+@test Tables.columnaccess(typeof(sel))
+@test Tables.columns(sel) === sel
+@test propertynames(sel) == (:A,)
+
+sel = ctable |> TableOperations.select(1)
+@test Tables.istable(typeof(sel))
+@test Tables.schema(sel) == Tables.Schema((:A,), (Union{Int, Missing},))
+@test Tables.columnaccess(typeof(sel))
+@test Tables.columns(sel) === sel
+@test propertynames(sel) == (:A,)
+
+sel = TableOperations.select(rtable)
+@test Tables.rowaccess(typeof(sel))
+@test Tables.rows(sel) === sel
+@test Tables.schema(sel) == Tables.Schema((), ())
+@test Base.IteratorSize(typeof(sel)) == Base.HasShape{1}()
+@test length(sel) == 3
+@test Base.IteratorEltype(typeof(sel)) == Base.HasEltype()
+@test eltype(sel) == TableOperations.SelectRow{NamedTuple{(:A, :B, :C),Tuple{Union{Missing, Int},Float64,String}},()}
+@test Tables.columntable(sel) == NamedTuple()
+@test Tables.rowtable(sel) == [NamedTuple(), NamedTuple(), NamedTuple()]
+srow = first(sel)
+@test propertynames(srow) == ()
+
+sel = rtable |> TableOperations.select(:A)
+@test Tables.rowaccess(typeof(sel))
+@test Tables.rows(sel) === sel
+@test Tables.schema(sel) == Tables.Schema((:A,), (Union{Int, Missing},))
+@test Base.IteratorSize(typeof(sel)) == Base.HasShape{1}()
+@test length(sel) == 3
+@test Base.IteratorEltype(typeof(sel)) == Base.HasEltype()
+@test eltype(sel) == TableOperations.SelectRow{NamedTuple{(:A, :B, :C),Tuple{Union{Missing, Int},Float64,String}},(:A,)}
+@test isequal(Tables.columntable(sel), (A = [1, missing, 3],))
+@test isequal(Tables.rowtable(sel), [(A=1,), (A=missing,), (A=3,)])
+srow = first(sel)
+@test propertynames(srow) == (:A,)
+
+sel = rtable |> TableOperations.select(1)
+@test Tables.rowaccess(typeof(sel))
+@test Tables.rows(sel) === sel
+@test Tables.schema(sel) == Tables.Schema((:A,), (Union{Int, Missing},))
+@test Base.IteratorSize(typeof(sel)) == Base.HasShape{1}()
+@test length(sel) == 3
+@test Base.IteratorEltype(typeof(sel)) == Base.HasEltype()
+@test eltype(sel) == TableOperations.SelectRow{NamedTuple{(:A, :B, :C),Tuple{Union{Missing, Int},Float64,String}},(1,)}
+@test isequal(Tables.columntable(sel), (A = [1, missing, 3],))
+@test isequal(Tables.rowtable(sel), [(A=1,), (A=missing,), (A=3,)])
+srow = first(sel)
+@test propertynames(srow) == (:A,)
+@test Tables.getcolumn(srow, 1) == 1
+@test Tables.getcolumn(srow, :A) == 1
+
 table = ctable |> TableOperations.select(:A) |> Tables.columntable
+@test length(table) == 1
+@test isequal(table.A, [1, missing, 3])
+
+table = ctable |> TableOperations.select(1) |> Tables.columntable
 @test length(table) == 1
 @test isequal(table.A, [1, missing, 3])
 
@@ -72,13 +174,28 @@ table = ctable |> TableOperations.select("A") |> Tables.columntable
 # column re-ordering
 table = ctable |> TableOperations.select(:A, :C) |> Tables.columntable
 @test length(table) == 2
+@test isequal(table.A, [1, missing, 3])
+@test isequal(table[2], ["hey", "there", "sailor"])
+
+table = ctable |> TableOperations.select(1, 3) |> Tables.columntable
+@test length(table) == 2
+@test isequal(table.A, [1, missing, 3])
+@test isequal(table[2], ["hey", "there", "sailor"])
 
 table = ctable |> TableOperations.select(:C, :A) |> Tables.columntable
 @test isequal(ctable.A, table.A)
 @test isequal(ctable[1], table[2])
 
+table = ctable |> TableOperations.select(3, 1) |> Tables.columntable
+@test isequal(ctable.A, table.A)
+@test isequal(ctable[1], table[2])
+
 # row sink
 table = ctable |> TableOperations.select(:A) |> Tables.rowtable
+@test length(table[1]) == 1
+@test isequal(map(x->x.A, table), [1, missing, 3])
+
+table = ctable |> TableOperations.select(1) |> Tables.rowtable
 @test length(table[1]) == 1
 @test isequal(map(x->x.A, table), [1, missing, 3])
 
@@ -89,7 +206,55 @@ table = ctable |> TableOperations.select("A") |> Tables.rowtable
 # column re-ordering
 table = ctable |> TableOperations.select(:A, :C) |> Tables.rowtable
 @test length(table[1]) == 2
+@test isequal(map(x->x.A, table), [1, missing, 3])
+@test isequal(map(x->x[2], table), ["hey", "there", "sailor"])
+
+table = ctable |> TableOperations.select(1, 3) |> Tables.rowtable
+@test length(table[1]) == 2
+@test isequal(map(x->x.A, table), [1, missing, 3])
+@test isequal(map(x->x[2], table), ["hey", "there", "sailor"])
 
 table = ctable |> TableOperations.select(:C, :A) |> Tables.rowtable
 @test isequal(ctable.A, map(x->x.A, table))
 @test isequal(ctable[1], map(x->x[2], table))
+
+table = ctable |> TableOperations.select(3, 1) |> Tables.rowtable
+@test isequal(ctable.A, map(x->x.A, table))
+@test isequal(ctable[1], map(x->x[2], table))
+
+end
+
+@testset "TableOperations.filter" begin
+
+f = TableOperations.filter(x->x.B == 2.0, ctable)
+@test Tables.istable(f)
+@test Tables.rowaccess(f)
+@test Tables.rows(f) === f
+@test Tables.schema(f) == Tables.schema(f)
+@test Base.IteratorSize(typeof(f)) == Base.SizeUnknown()
+@test Base.IteratorEltype(typeof(f)) == Base.HasEltype()
+@test eltype(f) == eltype(Tables.rows(ctable))
+@test isequal(Tables.columntable(f), Tables.columntable(ctable |> TableOperations.filter(x->x.B == 2.0)))
+@test length((TableOperations.filter(x->x.B == 2.0, ctable) |> Tables.columntable).B) == 1
+@test length((TableOperations.filter(x->x.B == 2.0, rtable) |> Tables.columntable).B) == 1
+@test length(TableOperations.filter(x->x.B == 2.0, ctable) |> Tables.rowtable) == 1
+@test length(TableOperations.filter(x->x.B == 2.0, rtable) |> Tables.rowtable) == 1
+
+end
+
+@testset "TableOperations.map" begin
+
+m = TableOperations.map(x->(A=x.A, C=x.C, B=x.B * 2), ctable)
+@test Tables.istable(m)
+@test Tables.rowaccess(m)
+@test Tables.rows(m) === m
+@test Tables.schema(m) === nothing
+@test Base.IteratorSize(typeof(m)) == Base.HasLength()
+@test Base.IteratorEltype(typeof(m)) == Base.EltypeUnknown()
+@test isequal(Tables.columntable(m), Tables.columntable(ctable |> TableOperations.map(x->(A=x.A, C=x.C, B=x.B * 2))))
+@test (TableOperations.map(x->(A=x.A, C=x.C, B=x.B * 2), ctable) |> Tables.columntable).B == [2.0, 4.0, 6.0]
+@test (TableOperations.map(x->(A=x.A, C=x.C, B=x.B * 2), rtable) |> Tables.columntable).B == [2.0, 4.0, 6.0]
+@test length(TableOperations.map(x->(A=x.A, C=x.C, B=x.B * 2), ctable) |> Tables.rowtable) == 3
+@test length(TableOperations.map(x->(A=x.A, C=x.C, B=x.B * 2), rtable) |> Tables.rowtable) == 3
+
+end
