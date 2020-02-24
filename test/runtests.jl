@@ -144,6 +144,25 @@ sel = rtable |> TableOperations.select(:A)
 srow = first(sel)
 @test propertynames(srow) == (:A,)
 
+# Testing issue where we always select the first column values, but using the correct name.
+# NOTE: We don't use rtable here because mixed types produce TypeErrors which hide the
+# underlying problem.
+rtable2 = [(A = 1.0, B = 2.0), (A = 2.0, B = 4.0), (A = 3.0, B = 6.0)]
+sel = rtable2 |> TableOperations.select(:B)
+@test Tables.rowaccess(typeof(sel))
+@test Tables.rows(sel) === sel
+@test Tables.schema(sel) == Tables.Schema((:B,), (Float64,))
+@test Base.IteratorSize(typeof(sel)) == Base.HasShape{1}()
+@test length(sel) == 3
+@test Base.IteratorEltype(typeof(sel)) == Base.HasEltype()
+@test eltype(sel) == TableOperations.SelectRow{NamedTuple{(:A, :B,),Tuple{Float64,Float64}},(:B,)}
+@test_broken isequal(Tables.columntable(sel), (B = B=[2.0, 4.0, 6.0],))
+@test_broken isequal(Tables.rowtable(sel), [(B=2.0,), (B=4.0,), (B=6.0,)])
+@test isequal(Tables.columntable(sel), (B = [1.0, 2.0, 3.0],))
+@test isequal(Tables.rowtable(sel), [(B=1.0,), (B=2.0,), (B=3.0,)])
+srow = first(sel)
+@test propertynames(srow) == (:B,)
+
 sel = rtable |> TableOperations.select(1)
 @test Tables.rowaccess(typeof(sel))
 @test Tables.rows(sel) === sel
