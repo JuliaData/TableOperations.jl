@@ -162,6 +162,7 @@ sel = rtable2 |> TableOperations.select(:B)
 @test isequal(Tables.rowtable(sel), [(B=1.0,), (B=2.0,), (B=3.0,)])
 srow = first(sel)
 @test propertynames(srow) == (:B,)
+@test srow.B == 2.0 # What we expect
 
 sel = rtable |> TableOperations.select(1)
 @test Tables.rowaccess(typeof(sel))
