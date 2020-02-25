@@ -1,7 +1,7 @@
 name = "TableOperations"
 uuid = "ab02a1b2-a7df-11e8-156e-fb1833f50b87"
 authors = ["Jacob Quinn <quinn.jacobd@gmail.com>"]
-version = "0.2.0"
+version = "0.2.1"
 
 [deps]
 Tables = "bd369af6-aec1-5ad0-b16a-f7cc5008161c"
