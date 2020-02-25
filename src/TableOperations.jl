@@ -144,8 +144,8 @@ struct SelectRow{T, names} <: Tables.AbstractRow
 end
 
 Tables.getcolumn(row::SelectRow, nm::Symbol) = Tables.getcolumn(getfield(row, 1), nm)
-Tables.getcolumn(row::SelectRow, i::Int) = Tables.getcolumn(getfield(row, 1), i)
-Tables.getcolumn(row::SelectRow, ::Type{T}, i::Int, nm::Symbol) where {T} = Tables.getcolumn(getfield(row, 1), T, i, nm)
+Tables.getcolumn(row::SelectRow{T, names}, i::Int) where {T, names} = Tables.getcolumn(getfield(row, 1), names[i])
+Tables.getcolumn(row::SelectRow, ::Type{T}, i::Int, nm::Symbol) where {T} = Tables.getcolumn(getfield(row, 1), T, Tables.columnindex(Tables.columnnames(getfield(row, 1)), nm), nm)
 
 getprops(row, nms::NTuple{N, Symbol}) where {N} = nms
 getprops(row, inds::NTuple{N, Int}) where {N} = ntuple(i->Tables.columnnames(getfield(row, 1))[inds[i]], N)
