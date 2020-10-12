@@ -253,4 +253,36 @@ end
     state === nothing && return nothing
     return m.func(state[1]), state[2]
 end
+
+# FillInTable
+struct FillInTable{T}
+    x::T
+    names::Vector{Symbol}
+end
+
+fillintable(x, names::Vector{Symbol}) = FillInTable(Tables.rows(x), names)
+
+Tables.isrowtable(::Type{<:FillInTable}) = true
+
+Base.IteratorSize(::Type{FillInTable{T}}) where {T} = Base.IteratorSize(T)
+Base.length(f::FillInTable) = length(f.x)
+Base.eltype(f::FillInTable{T}) where {T} = FillInRow{eltype(T)}
+
+struct FillInRow{T <: Tables.AbstractRow} <: Tables.AbstractRow
+    x::T
+    names::Vector{Symbol}
+end
+source(x::FillInRow) = getfield(x, :x)
+Tables.columnnames(x::FillInRow) = getfield(x, :names)
+Tables.getcolumn(x::FillInRow, i::Int) = haskey(source(x), i) ? Tables.getcolumn(source(x), i) : missing
+Tables.getcolumn(x::FillInRow, nm::Symbol) = haskey(source(x), nm) ? Tables.getcolumn(source(x), nm) : missing
+Tables.getcolumn(x::FillInRow, ::Type{T}, i::Int, nm::Symbol) where {T} = haskey(source(x), i) ? Tables.getcolumn(source(x), T, i, nm) : missing
+
+function Base.iterate(f::FillInTable, st=())
+    st = iterate(f.x, st...)
+    st === nothing && return nothing
+    row, state = st
+    return FillInRow(Tables.Row(row), f.names), state
+end
+
 end # module
