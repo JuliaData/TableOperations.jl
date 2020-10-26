@@ -278,3 +278,16 @@ m = TableOperations.map(x->(A=x.A, C=x.C, B=x.B * 2), ctable)
 @test length(TableOperations.map(x->(A=x.A, C=x.C, B=x.B * 2), rtable) |> Tables.rowtable) == 3
 
 end
+
+@testset "TableOperations.joinpartitions" begin
+
+p = Tables.partitioner((ctable, ctable))
+j = TableOperations.joinpartitions(p)
+@test Tables.istable(j)
+@test Tables.columnaccess(j)
+@test Tables.schema(j) === Tables.schema(ctable)
+@test Tables.columnnames(j) == Tables.columnnames(ctable)
+@test isequal(Tables.getcolumn(j, 1), vcat(Tables.getcolumn(ctable, 1), Tables.getcolumn(ctable, 1)))
+@test isequal(Tables.getcolumn(j, :A), vcat(Tables.getcolumn(ctable, :A), Tables.getcolumn(ctable, :A)))
+
+end
