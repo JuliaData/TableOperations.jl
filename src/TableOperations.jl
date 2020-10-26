@@ -269,13 +269,28 @@ Tables.getcolumn(x::JoinedPartitions, i::Int) = getfield(x, :x)[i]
 Tables.getcolumn(x::JoinedPartitions, nm::Symbol) = getfield(x, :lookup)[nm]
 Tables.schema(x::JoinedPartitions) = getfield(x, :schema)
 
+"""
+    TableOperations.joinpartitions(x) => TableOperations.JoinedPartitions
+    x |> TableOperations.joinpartitions() => TableOperations.JoinedPartitions
+
+Take an input `x` that implements `Tables.partitions` and "join" the partitions into
+a single, "long" table. Each column is lazily appended using `SentinelArrays.ChainedVector`
+so each partition's column is a single chain, and all partitions together are treated as a
+single column. This can be helpful for "materializing" a partitioned input if single-column
+operations are desired. No copy of the input data is made to avoid excessive memory allocations.
+
+The returned object, `TableOperations.JoinedPartitions`, satisfies itself the `Tables.columns`
+interface, so access to individual columns is supported via `x.col1`, `x[1]`, or
+`Tables.getcolumn(x, :col1)`, in addition to the normal Tables.jl compatibility with sink
+functions, like `df = DataFrame(TableOperations.joinpartitions(x))`.
+"""
 function joinpartitions(x)
     schema = Ref{Tables.Schema}()
     joined = ChainedVector[]
     N = 0
     for partition in Tables.partitions(x)
         cols = Tables.columns(partition)
-        if !isdefined(joined, :x)
+        if isempty(joined)
             schema[] = Tables.schema(cols)
             N = length(schema[].names)
             foreach(i -> push!(joined, ChainedVector([Tables.getcolumn(cols, i)])), 1:N)
@@ -285,5 +300,7 @@ function joinpartitions(x)
     end
     return JoinedPartitions(schema[], joined, Dict{Symbol, ChainedVector}(nm => col for (nm, col) in zip(schema[].names, joined)))
 end
+
+joinpartitions() = x -> joinpartitions(x)
 
 end # module
