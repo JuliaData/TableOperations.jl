@@ -1,6 +1,6 @@
 module TableOperations
 
-using Tables
+using Tables, SentinelArrays
 
 struct TransformsRow{T, F} <: Tables.AbstractRow
     row::T
@@ -253,4 +253,37 @@ end
     state === nothing && return nothing
     return m.func(state[1]), state[2]
 end
+
+# joinpartitions
+struct JoinedPartitions{S} <: Tables.AbstractColumns
+    schema::S
+    x::Vector{ChainedVector}
+    lookup::Dict{Symbol, ChainedVector}
+end
+
+Tables.istable(::Type{<:JoinedPartitions}) = true
+Tables.columnaccess(::Type{<:JoinedPartitions}) = true
+Tables.columns(x::JoinedPartitions) = Tables.CopiedColumns(x)
+Tables.columnnames(x::JoinedPartitions) = Tables.schema(x).names
+Tables.getcolumn(x::JoinedPartitions, i::Int) = getfield(x, :x)[i]
+Tables.getcolumn(x::JoinedPartitions, nm::Symbol) = getfield(x, :lookup)[nm]
+Tables.schema(x::JoinedPartitions) = getfield(x, :schema)
+
+function joinpartitions(x)
+    schema = Ref{Tables.Schema}()
+    joined = ChainedVector[]
+    N = 0
+    for partition in Tables.partitions(x)
+        cols = Tables.columns(partition)
+        if !isdefined(joined, :x)
+            schema[] = Tables.schema(cols)
+            N = length(schema[].names)
+            foreach(i -> push!(joined, ChainedVector([Tables.getcolumn(cols, i)])), 1:N)
+        else
+            foreach(i -> append!(joined[i], Tables.getcolumn(cols, i)), 1:N)
+        end
+    end
+    return JoinedPartitions(schema[], joined, Dict{Symbol, ChainedVector}(nm => col for (nm, col) in zip(schema[].names, joined)))
+end
+
 end # module
