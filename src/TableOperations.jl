@@ -303,4 +303,20 @@ end
 
 joinpartitions() = x -> joinpartitions(x)
 
+struct NarrowTypes{T}
+    x::T
+    schema::Tables.Schema
+end
+
+narrow_arr(x) = mapreduce(typeof, promote_type, x)
+narrow_types(t) = NarrowTypes(t, Tables.Schema(Tables.columnnames(t), [narrow_arr(getproperty(t, nm)) for nm in Tables.columnnames(t)]))
+
+Tables.getcolumn(nt::NarrowTypes, nm::Symbol) = Vector{getproperty(nt.schema.types, nm)}(Tables.getcolumn(getfield(nt, 1), nm))
+Tables.getcolumn(nt::NarrowTypes, i::Int) = Vector{nt.schema.types[i]}(Tables.getcolumn(getfield(nt, 1), i))
+
+Tables.columnnames(nt::NarrowTypes) = Tables.columnnames(getfield(nt, 1)) # or nt.sch.names?
+Tables.schema(nt::NarrowTypes) = nt.schema
+
+Tables.istable(::Type{<:NarrowTypes}) = true
+
 end # module
