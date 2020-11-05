@@ -344,7 +344,6 @@ end
 
 Tables.partitions(x::ColumnPartitions) = x
 Tables.partitions(x::RowPartitions) = x
-Tables.partitions(x::Iterators.PartitionIterator) = x
 
 struct ColumnPartitionRows{T}
     source::T
