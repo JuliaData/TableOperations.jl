@@ -2,6 +2,7 @@ using TableOperations, Tables, Test
 
 ctable = (A=[1, missing, 3], B=[1.0, 2.0, 3.0], C=["hey", "there", "sailor"])
 rtable = Tables.rowtable(ctable)
+rtable2 = Iterators.filter(i -> i.a % 2 == 0, [(a=x, b=y) for (x, y) in zip(1:20, 21:40)])
 
 @testset "TableOperations.transform" begin
 
@@ -289,5 +290,29 @@ j = TableOperations.joinpartitions(p)
 @test Tables.columnnames(j) == Tables.columnnames(ctable)
 @test isequal(Tables.getcolumn(j, 1), vcat(Tables.getcolumn(ctable, 1), Tables.getcolumn(ctable, 1)))
 @test isequal(Tables.getcolumn(j, :A), vcat(Tables.getcolumn(ctable, :A), Tables.getcolumn(ctable, :A)))
+
+end
+
+@testset "TableOperations.makepartitions" begin
+
+# columns
+@test_throws ArgumentError TableOperations.makepartitions(ctable, 0)
+parts = collect.(collect(Tables.partitions(TableOperations.makepartitions(ctable, 2))))
+@test length(parts[1]) == 2
+@test length(parts[2]) == 1
+@test parts[2][1].A == 3
+
+# rows
+parts = collect(Tables.partitions(TableOperations.makepartitions(rtable, 2)))
+@test length(parts[1]) == 2
+@test length(parts[2]) == 1
+@test parts[2][1].A == 3
+
+# forward-only row iterator
+parts = collect(Tables.partitions(TableOperations.makepartitions(rtable2, 3)))
+@test length(parts) == 4
+@test length(parts[1]) == 3
+@test length(parts[end]) == 1
+@test parts[end][1].a == 20
 
 end
