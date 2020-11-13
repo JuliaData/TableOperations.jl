@@ -410,4 +410,30 @@ Base.eltype(x::RowPartitions) = Vector{MaterializedRow}
     return resize!(v, i), y === nothing ? nothing : (y[2],)
 end
 
+struct NarrowTypes{T} <: Tables.AbstractColumns
+    x::T
+    schema::Tables.Schema
+end
+
+schema(nt::NarrowTypes) = getfield(nt, :schema)
+
+narrowarray(x) = mapreduce(typeof, promote_type, x)
+narrowarray(::Type{T}, x::AbstractArray{T}) where {T} = x
+narrowarray(::Type{T}, x::AbstractArray{S}) where {T, S} = Vector{T}(x)
+
+function narrowtypes(table)
+    t = Tables.columns(table)
+    return NarrowTypes(t, Tables.Schema(Tables.columnnames(t), [narrowarray(Tables.getcolumn(t, nm)) for nm in Tables.columnnames(t)]))
+end
+
+Tables.istable(::Type{<:NarrowTypes}) = true
+Tables.columnaccess(::Type{<:NarrowTypes}) = true
+Tables.columns(x::NarrowTypes) = x
+Tables.schema(nt::NarrowTypes) = schema(nt)
+
+Tables.columnnames(nt::NarrowTypes) = schema(nt).names
+
+Tables.getcolumn(nt::NarrowTypes, nm::Symbol) = narrowarray(Tables.columntype(schema(nt), nm), Tables.getcolumn(getfield(nt, 1), nm))
+Tables.getcolumn(nt::NarrowTypes, i::Int) = narrowarray(Tables.columntype(schema(nt), i), Tables.getcolumn(getfield(nt, 1), i))
+
 end # module
