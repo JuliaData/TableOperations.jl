@@ -1,7 +1,7 @@
 name = "TableOperations"
 uuid = "ab02a1b2-a7df-11e8-156e-fb1833f50b87"
 authors = ["Jacob Quinn <quinn.jacobd@gmail.com>"]
-version = "0.3.0"
+version = "1.0.0
 
 [deps]
 SentinelArrays = "91c51154-3ec4-41a3-a24f-3f23e20d615c"
