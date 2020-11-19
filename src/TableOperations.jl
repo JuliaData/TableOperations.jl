@@ -410,4 +410,42 @@ Base.eltype(x::RowPartitions) = Vector{MaterializedRow}
     return resize!(v, i), y === nothing ? nothing : (y[2],)
 end
 
+struct NarrowTypes{T} <: Tables.AbstractColumns
+    x::T
+    schema::Tables.Schema
+end
+
+schema(nt::NarrowTypes) = getfield(nt, :schema)
+
+narrowarray(x) = mapreduce(typeof, Base.promote_typejoin, x)
+narrowarray(::Type{T}, x::AbstractArray{T}) where {T} = x
+narrowarray(::Type{T}, x::AbstractArray{S}) where {T, S} = Vector{T}(x)
+
+"""
+    Tables.narrowtypes(source) => Tables.NarrowTypes
+    source |> Tables.narrowtypes() => Tables.NarrowTypes
+
+Take a Tables.jl-compatible source, with potentially "wide" column types, and re-infer the schema by
+promoting the types of each actual value for each column. Useful, for example, when a columnar table source
+has a column type of `Any`, and a more concrete type is desired. Uses `Base.promote_typejoin` internally
+to do actual type promotion.
+
+"""
+function narrowtypes(table)
+    t = Tables.columns(table)
+    return NarrowTypes(t, Tables.Schema(Tables.columnnames(t), [narrowarray(Tables.getcolumn(t, nm)) for nm in Tables.columnnames(t)]))
+end
+
+narrowtypes() = x -> narrowtypes(x)
+
+Tables.istable(::Type{<:NarrowTypes}) = true
+Tables.columnaccess(::Type{<:NarrowTypes}) = true
+Tables.columns(x::NarrowTypes) = x
+Tables.schema(nt::NarrowTypes) = schema(nt)
+
+Tables.columnnames(nt::NarrowTypes) = schema(nt).names
+
+Tables.getcolumn(nt::NarrowTypes, nm::Symbol) = narrowarray(Tables.columntype(schema(nt), nm), Tables.getcolumn(getfield(nt, 1), nm))
+Tables.getcolumn(nt::NarrowTypes, i::Int) = narrowarray(Tables.columntype(schema(nt), i), Tables.getcolumn(getfield(nt, 1), i))
+
 end # module

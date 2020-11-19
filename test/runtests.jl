@@ -316,3 +316,15 @@ parts = collect(Tables.partitions(TableOperations.makepartitions(rtable2, 3)))
 @test parts[end][1].a == 20
 
 end
+
+@testset "TableOperations.narrowtypes" begin
+
+ctable_type_any = (A=Any[1, missing, 3], B=Any[1.0, 2.0, 3.0], C=Any["hey", "there", "sailor"])
+
+nt = TableOperations.narrowtypes(ctable_type_any)
+@test Tables.istable(nt)
+@test Tables.columnaccess(nt)
+@test Tables.schema(nt) == Tables.schema(ctable)
+@test Tables.columnnames(nt) == Tables.columnnames(ctable)
+
+end
