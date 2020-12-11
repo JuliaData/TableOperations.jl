@@ -448,4 +448,42 @@ Tables.columnnames(nt::NarrowTypes) = schema(nt).names
 Tables.getcolumn(nt::NarrowTypes, nm::Symbol) = narrowarray(Tables.columntype(schema(nt), nm), Tables.getcolumn(getfield(nt, 1), nm))
 Tables.getcolumn(nt::NarrowTypes, i::Int) = narrowarray(Tables.columntype(schema(nt), i), Tables.getcolumn(getfield(nt, 1), i))
 
+# rename
+struct RenamedTable{T, P}
+    table::T
+    pairs::P
+end
+
+"""
+    rename(table, vals::AbstractVector{Symbol}; makeunique::Bool=false)
+    rename(table, vals::AbstractVector{<:AbstractString}; makeunique::Bool=false)
+    rename(table, (from => to)::Pair...)
+    rename(table, d::AbstractDict)
+    rename(table, d::AbstractVector{<:Pair})
+    rename(f::Function, table)
+
+Create a new table that is a copy of `table` with changed column names.
+Each name is changed at most once. Permutation of names is allowed.
+
+# Arguments
+- `table` : a Tables.jl-compatible table
+- `d` : an `AbstractDict` or an `AbstractVector` of `Pair`s that maps
+  the original names or column numbers to new names
+- `f` : a function which for each column takes the old name as a `String`
+  and returns the new name that gets converted to a `Symbol`
+- `vals` : new column names as a vector of `Symbol`s or `AbstractString`s
+  of the same length as the number of columns in `table`
+- `makeunique` : if `false` (the default), an error will be raised
+  if duplicate names are found; if `true`, duplicate names will be suffixed
+  with `_i` (`i` starting at 1 for the first duplicate).
+
+If pairs are passed to `rename` (as positional arguments or in a dictionary or
+a vector) then:
+* `from` value can be a `Symbol`, an `AbstractString` or an `Integer`;
+* `to` value can be a `Symbol` or an `AbstractString`.
+
+Mixing symbols and strings in `to` and `from` is not allowed.
+"""
+function rename end
+
 end # module
