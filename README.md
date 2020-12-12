@@ -2,7 +2,16 @@
 
 *Common table operations on Tables.jl compatible sources*
 
-[![][travis-img]][travis-url] [![][codecov-img]][codecov-url]
+[![CI](https://github.com/JuliaData/TableOperations.jl/workflows/CI/badge.svg)](https://github.com/JuliaData/TableOperations.jl/actions?query=workflow%3ACI)
+[![codecov](https://codecov.io/gh/JuliaData/TableOperations.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/JuliaData/TableOperations.jl)
+[![deps](https://juliahub.com/docs/TableOperations/deps.svg)](https://juliahub.com/ui/Packages/TableOperations/5GGWt?t=2)
+[![version](https://juliahub.com/docs/TableOperations/version.svg)](https://juliahub.com/ui/Packages/TableOperations/5GGWt)
+[![version](https://juliahub.com/docs/TableOperations/version.svg)](https://juliahub.com/ui/Packages/TableOperations/5GGWt)
+
+**Installation**: at the Julia REPL, `import Pkg; Pkg.add("TableOperations")`
+
+**Maintenance**: TableOperations is maintained collectively by the [JuliaData collaborators](https://github.com/orgs/JuliaData/people).
+Responsiveness to pull requests and issues can vary, depending on the availability of key collaborators.
 
 ## Documentation
 
