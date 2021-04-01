@@ -27,8 +27,8 @@ Base.propertynames(t::Transforms{true}) = Tables.columnnames(t)
 Base.getproperty(t::Transforms{true}, nm::Symbol) = Tables.getcolumn(t, nm)
 
 """
-    Tables.transform(source, funcs) => Tables.Transforms
-    source |> Tables.transform(funcs) => Tables.Transform
+    TableOperations.transform(source, funcs) => TableOperations.Transforms
+    source |> TableOperations.transform(funcs) => TableOperations.Transform
 
 Given any Tables.jl-compatible source, apply a series of transformation functions, for the columns specified in `funcs`.
 The tranform functions can be a NamedTuple or Dict mapping column name (`String` or `Symbol` or `Integer` index) to Function.
@@ -77,8 +77,8 @@ struct Select{T, columnaccess, names}
 end
 
 """
-    Tables.select(source, columns...) => Tables.Select
-    source |> Tables.select(columns...) => Tables.Select
+    TableOperations.select(source, columns...) => TableOperations.Select
+    source |> TableOperations.select(columns...) => TableOperations.Select
 
 Create a lazy wrapper that satisfies the Tables.jl interface and keeps only the columns given by the columns arguments, which can be `String`s, `Symbol`s, or `Integer`s
 """
@@ -174,8 +174,8 @@ struct Filter{F, T}
 end
 
 """
-    Tables.filter(f, source) => Tables.Filter
-    source |> Tables.filter(f) => Tables.Filter
+    TableOperations.filter(f, source) => TableOperations.Filter
+    source |> TableOperations.filter(f) => TableOperations.Filter
 
 Create a lazy wrapper that satisfies the Tables.jl interface and keeps the rows where `f(row)` is true.
 """
@@ -221,8 +221,8 @@ struct Map{F, T}
 end
 
 """
-    Tables.map(f, source) => Tables.Map
-    source |> Tables.map(f) => Tables.Map
+    TableOperations.map(f, source) => TableOperations.Map
+    source |> TableOperations.map(f) => TableOperations.Map
 
 Create a lazy wrapper that satisfies the Tables.jl interface and will apply the function `f(row)` to each
 row in the input table source. Note that `f` must take and produce a valid Tables.jl `Row` object.
@@ -314,11 +314,11 @@ struct RowPartitions{T}
 end
 
 """
-    Tables.makepartitions(source, nrows) => Tables.MakePartitions
-    source |> Tables.makepartitions(nrows) => Tables.MakePartitions
+    TableOperations.makepartitions(source, nrows) => TableOperations.MakePartitions
+    source |> TableOperations.makepartitions(nrows) => TableOperations.MakePartitions
 
 Take a Tables.jl-compatible source and "partition" it into chunks with `nrows` rows.
-Returns a `Tables.MakePartitions` object that implements `Tables.partitions`, where each
+Returns a `TableOperations.MakePartitions` object that implements `Tables.partitions`, where each
 iteration returns `nrows` rows. For input tables that produce forward-only row iterators,
 a `materializerows=true` keyword argument can be passed that will basically make a copy
 of each row to ensure partitioning works as expected.
@@ -422,8 +422,8 @@ narrowarray(::Type{T}, x::AbstractArray{T}) where {T} = x
 narrowarray(::Type{T}, x::AbstractArray{S}) where {T, S} = Vector{T}(x)
 
 """
-    Tables.narrowtypes(source) => Tables.NarrowTypes
-    source |> Tables.narrowtypes() => Tables.NarrowTypes
+    TableOperations.narrowtypes(source) => TableOperations.NarrowTypes
+    source |> TableOperations.narrowtypes() => TableOperations.NarrowTypes
 
 Take a Tables.jl-compatible source, with potentially "wide" column types, and re-infer the schema by
 promoting the types of each actual value for each column. Useful, for example, when a columnar table source
