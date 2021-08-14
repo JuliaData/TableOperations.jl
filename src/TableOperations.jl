@@ -452,6 +452,8 @@ Tables.getcolumn(nt::NarrowTypes, i::Int) = narrowarray(Tables.columntype(schema
 """
     TableOperations.dropmissing(source) => TableOperations.Filter
     source |> TableOperations.dropmissing() => TableOperations.Filter
+
+Take a Tables.jl-compatible source and filter lazily every row where missing values are present.
 """
 function dropmissing(table)
     return TableOperations.filter(_check_no_missing_in_row, table)
