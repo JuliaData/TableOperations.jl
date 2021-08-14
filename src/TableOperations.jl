@@ -448,4 +448,23 @@ Tables.columnnames(nt::NarrowTypes) = schema(nt).names
 Tables.getcolumn(nt::NarrowTypes, nm::Symbol) = narrowarray(Tables.columntype(schema(nt), nm), Tables.getcolumn(getfield(nt, 1), nm))
 Tables.getcolumn(nt::NarrowTypes, i::Int) = narrowarray(Tables.columntype(schema(nt), i), Tables.getcolumn(getfield(nt, 1), i))
 
+# dropmissing
+"""
+    TableOperations.dropmissing(source) => TableOperations.Filter
+    source |> TableOperations.dropmissing() => TableOperations.Filter
+"""
+function dropmissing(table)
+    return TableOperations.filter(_check_no_missing_in_row, table)
+end
+
+dropmissing() = x -> dropmissing(x)
+
+function _check_no_missing_in_row(row)
+    for el in row
+        el === missing && return false
+    end
+
+    return true
+end
+
 end # module
