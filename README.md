@@ -56,6 +56,14 @@ ctable = (A=[1, missing, 3], B=[1.0, 2.0, 3.0], C=["hey", "there", "sailor"])
 table = ctable |> TableOperations.map(x->(A=Tables.getcolumn(x, :A), C=Tables.getcolumn(x, :C), B=Tables.getcolumn(x, :B) * 2)) |> Tables.columntable
 ```
 
+### `TableOperations.narrowtypes`
+The TableOperations.narrowtypes function allows infering column element types to better fit the stored data. Usage is like:
+```julia
+ctable_type_any = (A=Any[1, missing, 3], B=Any[1.0, 2.0, 3.0], C=Any["hey", "there", "sailor"])
+
+table = TableOperations.narrowtypes(ctable_type_any) |> Tables.columntable
+```
+
 ## Contributing and Questions
 
 Contributions are very welcome, as are feature requests and suggestions. Please open an
