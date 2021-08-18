@@ -4,6 +4,16 @@ ctable = (A=[1, missing, 3], B=[1.0, 2.0, 3.0], C=["hey", "there", "sailor"])
 rtable = Tables.rowtable(ctable)
 rtable2 = Iterators.filter(i -> i.a % 2 == 0, [(a=x, b=y) for (x, y) in zip(1:20, 21:40)])
 
+struct ReallyWideTable
+end
+Tables.istable(::Type{ReallyWideTable}) = true
+Tables.columnaccess(::Type{ReallyWideTable}) = true
+Tables.columns(x::ReallyWideTable) = x
+Tables.columnnames(x::ReallyWideTable) = [Symbol(:x, i) for i = 1:100_000]
+Tables.getcolumn(x::ReallyWideTable, i::Int) = rand(10)
+Tables.getcolumn(x::ReallyWideTable, nm::Symbol) = rand(10)
+Tables.schema(x::ReallyWideTable) = Tables.Schema(Tables.columnnames(x), [Float64 for _ = 1:100_000])
+
 @testset "TableOperations.transform" begin
 
 tran = ctable |> TableOperations.transform(C=Symbol)
@@ -92,6 +102,22 @@ table = ctable |> TableOperations.transform(Dict(2=>x->x==2.0 ? missing : x)) |>
 end
 
 @testset "TableOperations.select" begin
+
+# 20
+x = ReallyWideTable()
+sel = TableOperations.select(x, :x1, :x2)
+sch = Tables.schema(sel)
+@test sch.names == (:x1, :x2)
+@test sch.types == (Float64, Float64)
+tt = Tables.columntable(sel)
+@test tt.x1 isa Vector{Float64}
+
+sel = TableOperations.select(x, 1, 2)
+sch = Tables.schema(sel)
+@test sch.names == (:x1, :x2)
+@test sch.types == (Float64, Float64)
+tt = Tables.columntable(sel)
+@test tt.x1 isa Vector{Float64}
 
 # 117
 sel = TableOperations.select(ctable)
