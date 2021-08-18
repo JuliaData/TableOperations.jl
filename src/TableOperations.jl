@@ -106,8 +106,22 @@ end
 
 typesubset(::Tables.Schema{names, types}, ::Tuple{}) where {names, types} = Tuple{}
 
+function typesubset(sch::Tables.Schema{nothing, nothing}, nms::NTuple{N, Symbol}) where {N}
+    names = sch.names
+    types = sch.types
+    return Tuple{types[indexin(collect(nms), names)]...}
+end
+
+function typesubset(sch::Tables.Schema{nothing, nothing}, inds::NTuple{N, Int}) where {N}
+    types = sch.types
+    return Tuple{Any[types[i] for i in inds]...}
+end
+
+typesubset(::Tables.Schema{nothing, nothing}, ::Tuple{}) = Tuple{}
+
 namesubset(::Tables.Schema{names, types}, nms::NTuple{N, Symbol}) where {names, types, N} = nms
 Base.@pure namesubset(::Tables.Schema{names, T}, inds::NTuple{N, Int}) where {names, T, N} = ntuple(i -> names[inds[i]], N)
+Base.@pure namesubset(sch::Tables.Schema{nothing, nothing}, inds::NTuple{N, Int}) where {N} = (names = sch.names; ntuple(i -> names[inds[i]], N))
 namesubset(::Tables.Schema{names, types}, ::Tuple{}) where {names, types} = ()
 namesubset(names, nms::NTuple{N, Symbol}) where {N} = nms
 namesubset(names, inds::NTuple{N, Int}) where {N} = ntuple(i -> names[inds[i]], N)
