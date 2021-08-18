@@ -328,3 +328,12 @@ nt = TableOperations.narrowtypes(ctable_type_any)
 @test Tables.columnnames(nt) == Tables.columnnames(ctable)
 
 end
+
+@testset "TableOperations.dropmissing" begin
+
+table = ctable |> TableOperations.dropmissing() |> Tables.columntable
+@test isequal(table, Tables.columntable(TableOperations.dropmissing(ctable)))
+@test length(table |> Tables.columntable) == 3
+@test length(table |> Tables.rowtable) == 2
+
+end
