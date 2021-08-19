@@ -64,6 +64,14 @@ ctable_type_any = (A=Any[1, missing, 3], B=Any[1.0, 2.0, 3.0], C=Any["hey", "the
 table = TableOperations.narrowtypes(ctable_type_any) |> Tables.columntable
 ```
 
+### `TableOperations.dropmissing`
+The TableOperations.dropmissing function allows to lazily remove every row where missing values are present. Usage is like: 
+```julia
+ctable = (A=[1, missing, 3], B=[1.0, 2.0, 3.0], C=["hey", "there", "sailor"])
+
+table = ctable |> TableOperations.dropmissing |> Tables.columntable
+```
+
 ## Contributing and Questions
 
 Contributions are very welcome, as are feature requests and suggestions. Please open an
