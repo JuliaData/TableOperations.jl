@@ -75,7 +75,7 @@ table = ctable |> TableOperations.dropmissing |> Tables.columntable
 ### `TableOperations.joinpartitions`
 The TableOperations.joinpartitions function allows you to lazily chain (or "join") multiple tables into a single long table. Usage is like:
 ```julia
-ctables = Tables.partitioner(i -> (A=fill(i, 10), B=rand(10) * 10), 1:3)
+ctables = Tables.partitioner(i -> (A=fill(i, 10), B=rand(10) * i), 1:3)
 
 table = ctables |> TableOperations.joinpartitions |> Tables.columntable
 ```
