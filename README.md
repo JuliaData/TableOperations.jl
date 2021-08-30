@@ -72,6 +72,14 @@ ctable = (A=[1, missing, 3], B=[1.0, 2.0, 3.0], C=["hey", "there", "sailor"])
 table = ctable |> TableOperations.dropmissing |> Tables.columntable
 ```
 
+### `TableOperations.joinpartitions`
+The TableOperations.joinpartitions function allows you to lazily chain (or "join") multiple tables into a single long table. Usage is like:
+```julia
+ctables = Tables.partitioner(i -> (A=fill(i, 10), B=rand(10) * i), 1:3)
+
+table = ctables |> TableOperations.joinpartitions |> Tables.columntable
+```
+
 ## Contributing and Questions
 
 Contributions are very welcome, as are feature requests and suggestions. Please open an
