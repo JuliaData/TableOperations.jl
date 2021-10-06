@@ -291,14 +291,16 @@ Take an input `x` that implements `Tables.partitions` and "join" the partitions 
 a single, "long" table. Each column is lazily appended using `SentinelArrays.ChainedVector`
 so each partition's column is a single chain, and all partitions together are treated as a
 single column. This can be helpful for "materializing" a partitioned input if single-column
-operations are desired. No copy of the input data is made to avoid excessive memory allocations.
+operations are desired. No copy of the input data is made to avoid excessive memory allocations,
+unless `promote=true` is specified. If `promote=true` then columns will be promoted to a
+common type, requiring extra allocations.
 
 The returned object, `TableOperations.JoinedPartitions`, satisfies itself the `Tables.columns`
 interface, so access to individual columns is supported via `x.col1`, `x[1]`, or
 `Tables.getcolumn(x, :col1)`, in addition to the normal Tables.jl compatibility with sink
 functions, like `df = DataFrame(TableOperations.joinpartitions(x))`.
 """
-function joinpartitions(x)
+function joinpartitions(x; promote=false)
     schema = Ref{Tables.Schema}()
     joined = ChainedVector[]
     N = 0
@@ -309,9 +311,33 @@ function joinpartitions(x)
             N = length(schema[].names)
             foreach(i -> push!(joined, ChainedVector([Tables.getcolumn(cols, i)])), 1:N)
         else
-            foreach(i -> append!(joined[i], Tables.getcolumn(cols, i)), 1:N)
+            foreach(1:N) do i
+                prev = joined[i]
+                col = Tables.getcolumn(cols, i)
+                T = eltype(prev)
+                S = eltype(col)
+
+                if !(S <: T) && promote
+                    R = promote_type(S, T)
+                    # Promote the joined arrays
+                    newcol = similar(prev, R)
+                    copyto!(newcol, prev)
+                    joined[i] = newcol
+
+                    # Update the schema
+                    sch_names = schema[].names
+                    sch_types = schema[].types
+                    schema[] = Tables.Schema(
+                        sch_names,
+                        Tuple(j == i ? R : sch_types[j] for j in 1:N),
+                    )
+                end
+
+                append!(joined[i], col)
+            end
         end
     end
+
     return JoinedPartitions(schema[], joined, Dict{Symbol, ChainedVector}(nm => col for (nm, col) in zip(schema[].names, joined)))
 end
 
