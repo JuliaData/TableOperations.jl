@@ -317,6 +317,20 @@ j = TableOperations.joinpartitions(p)
 @test isequal(Tables.getcolumn(j, 1), vcat(Tables.getcolumn(ctable, 1), Tables.getcolumn(ctable, 1)))
 @test isequal(Tables.getcolumn(j, :A), vcat(Tables.getcolumn(ctable, :A), Tables.getcolumn(ctable, :A)))
 
+# Test joinpartitions with promotion
+t1 = (A=[1, 2, 3], B=[1, 2, 3], C=["hey", "there", "sailor"])
+t2 = (A=[1, missing, 3], B=[1.0, 2.0, 3.0], C=["trim", "the", "sail"])
+p = Tables.partitioner((t1, t2))
+# Throws a method error trying to convert `missing` to `Int64`
+@test_throws MethodError TableOperations.joinpartitions(p)
+j = TableOperations.joinpartitions(p; promote=true)
+@test Tables.istable(j)
+@test Tables.columnaccess(j)
+@test Tables.schema(j) !== Tables.schema(t1)
+@test Tables.schema(j) === Tables.schema(t2)
+@test Tables.columnnames(j) == Tables.columnnames(t1) == Tables.columnnames(t2)
+@test isequal(Tables.getcolumn(j, 1), vcat(Tables.getcolumn(t1, 1), Tables.getcolumn(t2, 1)))
+@test isequal(Tables.getcolumn(j, :A), vcat(Tables.getcolumn(t1, :A), Tables.getcolumn(t2, :A)))
 end
 
 @testset "TableOperations.makepartitions" begin
