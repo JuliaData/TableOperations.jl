@@ -300,7 +300,7 @@ interface, so access to individual columns is supported via `x.col1`, `x[1]`, or
 `Tables.getcolumn(x, :col1)`, in addition to the normal Tables.jl compatibility with sink
 functions, like `df = DataFrame(TableOperations.joinpartitions(x))`.
 """
-function joinpartitions(x; promote=false)
+function joinpartitions(x; promote::Bool=false)
     schema = Ref{Tables.Schema}()
     joined = ChainedVector[]
     N = 0
