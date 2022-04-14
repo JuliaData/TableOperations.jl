@@ -36,7 +36,7 @@ The tranform functions can be a NamedTuple or Dict mapping column name (`String`
 function transform end
 
 transform(funcs) = x->transform(x, funcs)
-transform(; kw...) = transform(kw.data)
+transform(; kw...) = transform(values(kw))
 function transform(src::T, funcs::F) where {T, F}
     C = Tables.columnaccess(T)
     x = C ? Tables.columns(src) : Tables.rows(src)
