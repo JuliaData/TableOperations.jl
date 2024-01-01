@@ -24,6 +24,15 @@ table_subset = ctable |> TableOperations.select(:C, :A) |> Tables.columntable
 ```
 This "selects" the `C` and `A` columns from the original table, and re-orders them with `C` first. The column names can be provided as `String`s, `Symbol`s, or `Integer`s.
 
+### `TableOperations.reject`
+The `TableOperations.reject` function *drops* the specified subset of columns from a Tables.jl source, like:
+```julia
+ctable = (A=[1, missing, 3], B=[1.0, 2.0, 3.0], C=["hey", "there", "sailor"])
+
+table_subset = ctable |> TableOperations.reject(:B) |> Tables.columntable
+```
+This "selects" all columns except for `B` from the original table in the order in which they originally appear. The column names can be provided as `String`s, `Symbol`s, or `Integer`s.
+
 ### `TableOperations.transform`
 The `TableOperations.transform` function allows specifying a "transform" function per column that will be applied per element. This is handy
 when a simple transformation is needed for a specific column (or columns). Note that this doesn't allow the creation of new columns,
