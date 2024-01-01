@@ -271,6 +271,129 @@ table = ctable |> TableOperations.select(3, 1) |> Tables.rowtable
 
 end
 
+@testset "TableOperations.reject" begin
+# 20
+x = ReallyWideTable()
+sel = TableOperations.reject(x, :x1, :x2);
+sch = Tables.schema(sel);
+@test :x1 ∉ sch.names && :x2 ∉ sch.names
+@test sch.types == ntuple(i -> Float64, 99998)
+#tt = Tables.columntable(sel)
+#@test tt.x1 isa Vector{Float64}
+
+# 117
+sel = TableOperations.reject(ctable, 1, 2, 3)
+@test Tables.istable(typeof(sel))
+@test Tables.schema(sel) == Tables.Schema((), ())
+@test Tables.columnaccess(typeof(sel))
+@test Tables.columns(sel) === sel
+@test propertynames(sel) == ()
+@test isequal(Tables.getcolumn(sel, 1), [1, missing, 3])
+@test isequal(Tables.getcolumn(sel, :A), [1, missing, 3])
+@test Tables.columntable(sel) == NamedTuple()
+@test Tables.rowtable(sel) == NamedTuple{(), Tuple{}}[]
+sel = ctable |> TableOperations.reject(:A)
+@test Tables.istable(typeof(sel))
+@test Tables.schema(sel) == Tables.Schema((:B, :C), (Float64, String))
+@test Tables.columnaccess(typeof(sel))
+@test Tables.columns(sel) === sel
+@test propertynames(sel) == (:B, :C)
+
+sel = ctable |> TableOperations.reject(1)
+@test Tables.istable(typeof(sel))
+@test Tables.schema(sel) == Tables.Schema((:B, :C), (Float64, String))
+@test Tables.columnaccess(typeof(sel))
+@test Tables.columns(sel) === sel
+@test propertynames(sel) == (:B, :C)
+
+sel = TableOperations.reject(rtable, 1, 2, 3)
+@test Tables.rowaccess(typeof(sel))
+@test Tables.rows(sel) === sel
+@test Tables.schema(sel) == Tables.Schema((), ())
+@test Base.IteratorSize(typeof(sel)) == Base.HasShape{1}()
+@test length(sel) == 3
+@test Base.IteratorEltype(typeof(sel)) == Base.HasEltype()
+@test eltype(sel) == TableOperations.SelectRow{NamedTuple{(:A, :B, :C),Tuple{Union{Missing, Int},Float64,String}},()}
+@test Tables.columntable(sel) == NamedTuple()
+@test Tables.rowtable(sel) == [NamedTuple(), NamedTuple(), NamedTuple()]
+srow = first(sel)
+@test propertynames(srow) == ()
+
+sel = rtable |> TableOperations.reject(:B, :C)
+@test Tables.rowaccess(typeof(sel))
+@test Tables.rows(sel) === sel
+@test Tables.schema(sel) == Tables.Schema((:A,), (Union{Int, Missing},))
+@test Base.IteratorSize(typeof(sel)) == Base.HasShape{1}()
+@test length(sel) == 3
+@test Base.IteratorEltype(typeof(sel)) == Base.HasEltype()
+@test eltype(sel) == TableOperations.SelectRow{NamedTuple{(:A, :B, :C),Tuple{Union{Missing, Int},Float64,String}},(:A,)}
+@test isequal(Tables.columntable(sel), (A = [1, missing, 3],))
+@test isequal(Tables.rowtable(sel), [(A=1,), (A=missing,), (A=3,)])
+srow = first(sel)
+@test propertynames(srow) == (:A,)
+
+# Testing issue where we always select the first column values, but using the correct name.
+# NOTE: We don't use rtable here because mixed types produce TypeErrors which hide the
+# underlying problem.
+rtable2 = [(A = 1.0, B = 2.0), (A = 2.0, B = 4.0), (A = 3.0, B = 6.0)]
+sel = rtable2 |> TableOperations.reject(:A, :C)
+@test Tables.rowaccess(typeof(sel))
+@test Tables.rows(sel) === sel
+@test Tables.schema(sel) == Tables.Schema((:B,), (Float64,))
+@test Base.IteratorSize(typeof(sel)) == Base.HasShape{1}()
+@test length(sel) == 3
+@test Base.IteratorEltype(typeof(sel)) == Base.HasEltype()
+@test eltype(sel) == TableOperations.SelectRow{NamedTuple{(:A, :B,),Tuple{Float64,Float64}},(:B,)}
+@test isequal(Tables.columntable(sel), (B = [2.0, 4.0, 6.0],))
+@test isequal(Tables.rowtable(sel), [(B=2.0,), (B=4.0,), (B=6.0,)])
+@test isequal(Tables.columntable(sel), (B = [2.0, 4.0, 6.0],))
+@test isequal(Tables.rowtable(sel), [(B=2.0,), (B=4.0,), (B=6.0,)])
+srow = first(sel)
+@test propertynames(srow) == (:B,)
+@test srow.B == 2.0 # What we expect
+
+sel = rtable |> TableOperations.reject(2, 3)
+@test Tables.rowaccess(typeof(sel))
+@test Tables.rows(sel) === sel
+@test Tables.schema(sel) == Tables.Schema((:A,), (Union{Int, Missing},))
+@test Base.IteratorSize(typeof(sel)) == Base.HasShape{1}()
+@test length(sel) == 3
+@test Base.IteratorEltype(typeof(sel)) == Base.HasEltype()
+@test eltype(sel) == TableOperations.SelectRow{NamedTuple{(:A, :B, :C),Tuple{Union{Missing, Int},Float64,String}},(1,)}
+@test isequal(Tables.columntable(sel), (A = [1, missing, 3],))
+@test isequal(Tables.rowtable(sel), [(A=1,), (A=missing,), (A=3,)])
+srow = first(sel)
+@test propertynames(srow) == (:A,)
+@test Tables.getcolumn(srow, 1) == 1
+@test Tables.getcolumn(srow, :A) == 1
+
+table = ctable |> TableOperations.reject(:B, :C) |> Tables.columntable
+@test length(table) == 1
+@test isequal(table.A, [1, missing, 3])
+
+table = ctable |> TableOperations.reject(2, 3) |> Tables.columntable
+@test length(table) == 1
+@test isequal(table.A, [1, missing, 3])
+
+table = ctable |> TableOperations.reject("B", "C") |> Tables.columntable
+@test length(table) == 1
+@test isequal(table.A, [1, missing, 3])
+
+# row sink
+table = ctable |> TableOperations.reject(:B, :C) |> Tables.rowtable
+@test length(table[1]) == 1
+@test isequal(map(x->x.A, table), [1, missing, 3])
+
+table = ctable |> TableOperations.reject(2, 3) |> Tables.rowtable
+@test length(table[1]) == 1
+@test isequal(map(x->x.A, table), [1, missing, 3])
+
+table = ctable |> TableOperations.reject("B", "C") |> Tables.rowtable
+@test length(table[1]) == 1
+@test isequal(map(x->x.A, table), [1, missing, 3])
+
+end
+
 @testset "TableOperations.filter" begin
 
 f = TableOperations.filter(x->x.B == 2.0, ctable)
