@@ -272,6 +272,8 @@ table = ctable |> TableOperations.select(3, 1) |> Tables.rowtable
 end
 
 @testset "TableOperations.reject" begin
+# Tests below closely mirror those from "TableOperations.select", where appropriate
+
 # 20
 x = ReallyWideTable()
 sel = TableOperations.reject(x, :x1, :x2);
