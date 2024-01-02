@@ -181,6 +181,22 @@ end
     return SelectRow{typeof(row), names}(row), st
 end
 
+"""
+    TableOperations.reject(source, columns...) => TableOperations.Select
+    source |> TableOperations.reject(columns...) => TableOperations.Select
+
+Create a lazy wrapper that satisfies the Tables.jl interface and drops the columns given by the columns arguments, which can be `String`s, `Symbol`s, or `Integer`s
+"""
+function reject end
+
+reject(names::Symbol...) = x->reject(x, names...)
+reject(names::String...) = x->reject(x, Base.map(Symbol, names)...)
+reject(inds::Integer...) = x->reject(x, Base.map(Int, inds)...)
+
+reject(x::T, names::Symbol...) where {T} = select(x, setdiff(Tables.columnnames(Tables.columns(x)), names)...)
+reject(x::T, names::String...) where {T} = select(x, setdiff(Tables.columnnames(Tables.columns(x)), Base.map(Symbol, names))...)
+reject(x::T, inds::Integer...) where {T} = select(x, setdiff(1:length(Tables.columnnames(Tables.columns(x))), Base.map(Int, inds))...)
+
 # filter
 struct Filter{F, T}
     f::F
